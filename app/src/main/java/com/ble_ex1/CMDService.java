@@ -1,35 +1,40 @@
 package com.ble_ex1;
+import android.os.Build;
 import android.util.Log;
-public class CMDService {
 
-    private final static String TAG = "CMDService";
-    private StringBuffer buffer = new StringBuffer();
-    
-    public BLEService.BufferListener listener = new BLEService.BufferListener() {
-        public void onData(int status, byte[] byteArray) {
-            String str = new String(byteArray);
-            int _start = str.lastIndexOf("$");
-            int _end = str.indexOf("#");
+import androidx.annotation.RequiresApi;
 
-            if (_start != -1 && _end != -1) {
-                str = str.substring(_start + 1, _end);
-                Log.d(TAG, "str: " + str);
+import java.util.ArrayList;
+import java.util.List;
 
-            } else if (_start != -1) {
-                buffer = new StringBuffer();
-                buffer.append(str.substring(_start + 1, str.length()));
-            } else if (_end != -1) {
-                buffer.append(str.substring(0, _end));
-                String temp = buffer.toString();
-                Log.d(TAG, "str: " + temp);
-                buffer = new StringBuffer();
-            } else {
-                buffer.append(str);
-            }
-        }
-    };
+public class CMDService implements CMDSubject{
 
-    public BLEService.BufferListener getListener() {
-        return listener;
+    private String subjectState = null;
+    private List<CMDObserver> observers = null;
+
+    public CMDService() {
+        observers = new ArrayList<>();
+    }
+
+    @Override
+    public void attach(CMDObserver observer) {
+        observers.add(observer);
+    }
+
+    @Override
+    public void detach(CMDObserver observer) {
+        observers.remove(observer);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    @Override
+    public void replyObservers() {
+        observers.forEach(CMDObserver::reply);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    @Override
+    public void executeObservers() {
+        observers.forEach(CMDObserver::execute);
     }
 }
