@@ -58,7 +58,7 @@ public class Main extends Activity {
         registerPermissions();
 
         final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        if(!Global.initBleAdapter(this, mBluetoothManager)) {
+        if(!Global.BleService.initBleAdapter(this, mBluetoothManager)) {
             Toast.makeText(this, "Ble not supported.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -70,8 +70,8 @@ public class Main extends Activity {
         if(mDeviceAddress!=null && mDeviceAddress.length()>0
             && mDeviceName!=null && mDeviceName.length()>0)
         {
-            Global.initBleService(mDeviceAddress);
-            Global.setStatusListener(statusListener);
+            Global.BleService.initBleService(mDeviceAddress);
+            Global.BleService.setStatusListener(statusListener);
             //Global.setReadListener(readListener);
         }
 
@@ -110,7 +110,7 @@ public class Main extends Activity {
                     if(number>0) {
                         String str = "";
                         for(int i=0;i<number;i++) str+="A";
-                        Global.writeCharacteristic(new JSONObject().put("number", str).toString());
+                        Global.BleService.writeCharacteristic(new JSONObject().put("number", str).toString());
                     }
                 } catch (Exception ex) {}
             }
@@ -119,7 +119,7 @@ public class Main extends Activity {
         btn_tx = (Button)findViewById(R.id.btn_tx);
         btn_tx.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                Global.writeCharacteristic(edit_rx.getText().toString());
+                Global.BleService.writeCharacteristic(edit_rx.getText().toString());
             }
         });
 
@@ -134,7 +134,7 @@ public class Main extends Activity {
     public void searchDevice() {
         showRoundProcessDialog(Main.this, R.layout.loading_process_dialog_anim);
 
-        Global.scanLeDevice();
+        Global.BleService.scanLeDevice();
 
         Timer mTimer = new Timer();
         mTimer.schedule(new TimerTask() {

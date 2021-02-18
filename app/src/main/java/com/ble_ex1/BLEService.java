@@ -77,7 +77,6 @@ class BLEService {
                 if (readListener != null) {
                     //String rxStr = new String(characteristic.getValue());
                     //Log.d(TAG, "Read: " + rxStr + " len: " + rxStr.length());
-
                     readListener.onData(status, characteristic.getValue());
                 }
             }
@@ -102,18 +101,22 @@ class BLEService {
         this.readListener = listener;
     }
 
-    public void setBLEManager(BluetoothManager mBluetoothManager) {
-            this.mBluetoothManager = mBluetoothManager;
-    }
-
-    public void setActivity(Activity activity) {
+    public boolean initBleAdapter(Activity activity, BluetoothManager mBluetoothManager) {
         this.activity = activity;
+        this.mBluetoothManager = mBluetoothManager;
+        return initBleAdapter();
     }
 
     public boolean initBleAdapter() {
         mBluetoothAdapter = (mBluetoothManager==null?null:mBluetoothManager.getAdapter());
         if (mBluetoothAdapter == null) return false;
         return true;
+    }
+
+    public boolean initBleService(String address) {
+        boolean status = connect(address);
+        readRssi();
+        return status;
     }
 
     public boolean connect(final String address) {

@@ -37,4 +37,7 @@ public class CMDService implements CMDSubject{
     public void executeObservers() {
         observers.forEach(CMDObserver::execute);
     }
+
+
+
 }
