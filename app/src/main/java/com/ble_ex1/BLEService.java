@@ -113,7 +113,7 @@ class BLEService {
         return true;
     }
 
-    public boolean initBleService(String address) {
+    public boolean initBLEService(String address) {
         boolean status = connect(address);
         readRssi();
         return status;

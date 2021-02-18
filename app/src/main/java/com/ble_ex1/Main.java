@@ -58,7 +58,7 @@ public class Main extends Activity {
         registerPermissions();
 
         final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        if(!Global.BleService.initBleAdapter(this, mBluetoothManager)) {
+        if(!Global.BLEService.initBleAdapter(this, mBluetoothManager)) {
             Toast.makeText(this, "Ble not supported.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -70,9 +70,9 @@ public class Main extends Activity {
         if(mDeviceAddress!=null && mDeviceAddress.length()>0
             && mDeviceName!=null && mDeviceName.length()>0)
         {
-            Global.BleService.initBleService(mDeviceAddress);
-            Global.BleService.setStatusListener(statusListener);
-            //Global.setReadListener(readListener);
+            Global.BLEService.initBLEService(mDeviceAddress);
+            Global.BLEService.setStatusListener(statusListener);
+            Global.setReadListener();
         }
 
         initUI();
@@ -83,20 +83,6 @@ public class Main extends Activity {
         public void onData(int status, String value) {
         }
     };
-
-//    public BLEService.BLEListener readListener = new BLEService.BLEListener() {
-//        @Override
-//        public void onData(int status, String value) {
-//            runOnUiThread(new Runnable() {
-//                public void run() {
-//                    text_rx.append(value);
-//                    final int scrollAmount = text_rx.getLayout().getLineTop(text_rx.getLineCount()) - text_rx.getHeight();
-//                    if (scrollAmount > 0) text_rx.scrollTo(0, scrollAmount);
-//                    else text_rx.scrollTo(0, 0);
-//                }
-//            });
-//        }
-//    };
 
     public void initUI() {
         text_rx = (TextView)findViewById(R.id.text_rx);
@@ -110,7 +96,7 @@ public class Main extends Activity {
                     if(number>0) {
                         String str = "";
                         for(int i=0;i<number;i++) str+="A";
-                        Global.BleService.writeCharacteristic(new JSONObject().put("number", str).toString());
+                        Global.BLEService.writeCharacteristic(new JSONObject().put("number", str).toString());
                     }
                 } catch (Exception ex) {}
             }
@@ -119,7 +105,18 @@ public class Main extends Activity {
         btn_tx = (Button)findViewById(R.id.btn_tx);
         btn_tx.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                Global.BleService.writeCharacteristic(edit_rx.getText().toString());
+                try {
+                    String str = new JSONObject().put("command", edit_rx.getText().toString()).toString();
+                    Command command = CMD_API.CreateCommand(str);
+
+                    Global.BLESend(command, new CommandListener(){
+                        @Override
+                        public void onData(String value) {
+                            Log.d(TAG, "rev command: " + value);
+                        }
+                    });
+
+                } catch (Exception ex) {}
             }
         });
 
@@ -134,7 +131,7 @@ public class Main extends Activity {
     public void searchDevice() {
         showRoundProcessDialog(Main.this, R.layout.loading_process_dialog_anim);
 
-        Global.BleService.scanLeDevice();
+        Global.BLEService.scanLeDevice();
 
         Timer mTimer = new Timer();
         mTimer.schedule(new TimerTask() {

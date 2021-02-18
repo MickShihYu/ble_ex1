@@ -1,43 +1,47 @@
 package com.ble_ex1;
-import android.os.Build;
 import android.util.Log;
 
-import androidx.annotation.RequiresApi;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CMDService implements CMDSubject{
+public class CMDService{
+    private static final String TAG = "CMDService";
+    public static final String TIME_OUT = "time_out";
 
-    private String subjectState = null;
-    private List<CMDObserver> observers = null;
+    private List<Command> revCommands = null;
+    private static final int SearchCountMax = 3;
 
     public CMDService() {
-        observers = new ArrayList<>();
+        revCommands = new ArrayList<>();
     }
 
-    @Override
-    public void attach(CMDObserver observer) {
-        observers.add(observer);
+    public void receive(Command command) {
+
+        Log.d(TAG, "rev command: " + command.getName());
+        revCommands.add(command);
+        if(revCommands.size()>50) revCommands.remove(0);
     }
 
-    @Override
-    public void detach(CMDObserver observer) {
-        observers.remove(observer);
+    public void send(Command command, CommandListener listener) {
+
+        if(command == null) return;
+        if(listener == null) return;
+        try {
+            int serachCount = 0;
+            while(serachCount++<SearchCountMax) {
+                for(int i=revCommands.size()-1;i>=0;i--) {
+                    if(command.getName().equals(revCommands.get(i).getName())) {
+                        listener.onData(revCommands.get(i).execute().toString());
+                        revCommands.remove(i);
+                        return;
+                    }
+                }
+                Thread.sleep(1000);
+            }
+        } catch (Exception ex) { System.out.println(ex.toString()); }
+
+        listener.onData(TIME_OUT);
     }
-
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    @Override
-    public void replyObservers() {
-        observers.forEach(CMDObserver::reply);
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    @Override
-    public void executeObservers() {
-        observers.forEach(CMDObserver::execute);
-    }
-
-
-
 }
