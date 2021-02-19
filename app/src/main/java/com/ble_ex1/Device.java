@@ -36,7 +36,7 @@ public class Device extends Activity implements OnItemClickListener {
 			setTitle("Device");
 
 			listView = (ListView) findViewById(R.id.listView);
-			devices = (ArrayList<BluetoothDevice>) Global.BLEService.getBleDevice();
+			devices = (ArrayList<BluetoothDevice>) Global.getBleDevice();
 
 			for (BluetoothDevice device : devices) {
 				map = new HashMap<String, String>();

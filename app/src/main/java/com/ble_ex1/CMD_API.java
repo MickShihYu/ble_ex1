@@ -15,6 +15,7 @@ public class CMD_API {
                 switch (info.optString("command", "")) {
                     case "firmware":
                         command = (Command) new Firmware(info);
+                        break;
                     default:
                         command = (Command) new BaseCommand(info);
                 }
@@ -23,52 +24,41 @@ public class CMD_API {
         return command;
     }
 
-    static class BaseCommand implements Command {
+    public static class BaseCommand implements Command {
         private JSONObject info = null;
-        private Date system_time;
+        private String name = "";
+        private long system_time = 0;
 
         public BaseCommand(JSONObject info) {
             this.info = info;
-            this.system_time = new Date();
+            this.name = info.optString("command", "");
+            this.system_time = new Date().getTime();
         }
 
-        @Override
         public String getName() {
-            return info.optString("command");
+            return name;
         }
 
-        @Override
-        public boolean reply(String name) {
-            return false;
+        public long getTime() {
+            return system_time;
         }
 
-        @Override
+        public String toString() {
+            return info.toString();
+        }
+
         public JSONObject execute() throws JSONException {
-            return info.put("end_time", new Date().getTime());
+            return info;
         }
     }
 
-    static class Firmware implements Command {
-
-        public JSONObject info = null;
-
+    public static class Firmware extends BaseCommand{
         public Firmware(JSONObject info) {
-            this.info = info;
+            super(info);
         }
 
-        @Override
-        public String getName() {
-            return info.optString("command");
-        }
-
-        @Override
-        public boolean reply(String name) {
-            return false;
-        }
-
-        @Override
-        public JSONObject execute() {
-            return new JSONObject();
+        public JSONObject execute() throws  JSONException{
+            return new JSONObject().put("firmware", true);
         }
     }
 }
