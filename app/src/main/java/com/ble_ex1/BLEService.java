@@ -16,14 +16,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-class BLEService {
-
-    public interface BufferListener {
-        void onData(String type, int status, byte[] value);
-    }
+class BLEService implements BLEInterface{
 
     private final static String TAG = "BLEService";
-    private BluetoothManager bluetoothManager = null;
     private BluetoothAdapter bluetoothAdapter = null;
     private BluetoothGatt bluetoothGatt = null;
     private BufferListener readListener = null;
@@ -88,16 +83,9 @@ class BLEService {
         this.readListener = listener;
     }
 
-    public boolean initBLEAdapter(Activity activity, BluetoothManager bluetoothManager) {
+    public BLEService(Activity activity, BluetoothAdapter bluetoothAdapter) {
         this.activity = activity;
-        this.bluetoothManager = bluetoothManager;
-        return initBLEAdapter();
-    }
-
-    public boolean initBLEAdapter() {
-        bluetoothAdapter = (bluetoothManager==null?null:bluetoothManager.getAdapter());
-        if (bluetoothAdapter == null) return false;
-        return true;
+        this.bluetoothAdapter = bluetoothAdapter;
     }
 
     public boolean connect(final String address) {
@@ -127,6 +115,7 @@ class BLEService {
 
     public void close() {
         if (bluetoothGatt == null) return;
+        bluetoothGatt.disconnect();
         bluetoothGatt.close();
         bluetoothGatt = null;
     }
@@ -184,9 +173,13 @@ class BLEService {
 
     private BluetoothAdapter.LeScanCallback bleScanCallback = new BluetoothAdapter.LeScanCallback() {
         public void onLeScan(final BluetoothDevice device, final int rssi, byte[] scanRecord) {
-            if (device != null && device.getName()!=null && device.getName().length()>0) {
-                if (devices.indexOf(device) == -1)
+            //if (device != null && device.getName()!=null && device.getName().length()>0) {
+            if (device != null) {
+                if (devices.indexOf(device) == -1) {
                     devices.add(device);
+
+                    //Log.d(TAG, "" + device.getAddress() + " , " + device.getName());
+                }
             }
         }
     };

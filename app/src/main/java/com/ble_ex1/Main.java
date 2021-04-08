@@ -1,13 +1,9 @@
 package com.ble_ex1;
-
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
-import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.BroadcastReceiver;
@@ -19,6 +15,8 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
@@ -26,15 +24,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.core.app.ActivityCompat;
-
-import org.json.JSONArray;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -49,6 +40,10 @@ public class Main extends Activity {
     private Dialog dialog = null;
 
     private String deviceName = null, deviceAddress = null;
+
+    private boolean isBLEModule = false;
+
+    private BluetoothAdapter bluetoothAdapter = null;
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver(){
         @Override
@@ -89,8 +84,21 @@ public class Main extends Activity {
 
         registerPermissions();
 
-        final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        if(!Global.initBLEAdapter(this, mBluetoothManager)) {
+        initBluetoothAdapter();
+
+        initUI();
+    }
+
+    public void initBluetoothAdapter() {
+        if(isBLEModule) {
+            final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+            bluetoothAdapter = (bluetoothManager==null?null:bluetoothManager.getAdapter());
+        }
+        else {
+            bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        }
+
+        if(!Global.initBLEAdapter(this, bluetoothAdapter, isBLEModule)) {
             Toast.makeText(this, "Ble not supported.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -100,12 +108,10 @@ public class Main extends Activity {
         deviceName = intent.getStringExtra(Device.EXTRA_DEVICE_NAME);
 
         if(deviceAddress!=null && deviceAddress.length()>0
-            && deviceName!=null && deviceName.length()>0)
+                && deviceName!=null && deviceName.length()>0)
         {
             Global.connectBLE(deviceAddress);
         }
-
-        initUI();
     }
 
     public void initUI() {
@@ -230,5 +236,23 @@ public class Main extends Activity {
             }
         }
         return true;
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_devices, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        int id = item.getItemId();
+
+        isBLEModule = (id==R.id.menu_ble_2_0?false:true);
+
+        initBluetoothAdapter();
+
+        return super.onOptionsItemSelected(item);
     }
 }

@@ -1,6 +1,7 @@
 package com.ble_ex1;
 
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Intent;
@@ -21,19 +22,32 @@ public class Global {
     public static final String BLE_TIME_OUT = "time_out";
     public static final String BLE_EXECUTE = "execute";
 
-    private final static BLEService BLEService = new BLEService();
+    private static BLEInterface BLEService = null;
     private final static CMDService CMDService = new CMDService();
     private static Activity global_activity = null;
 
     private static StringBuffer buffer = new StringBuffer();
 
-    public static boolean initBLEAdapter(Activity activity, BluetoothManager mBluetoothManager) {
+    public static boolean initBLEAdapter(Activity activity, BluetoothAdapter bluetoothAdapter, boolean isBLEModule) {
         global_activity = activity;
-       return BLEService.initBLEAdapter(activity, mBluetoothManager);
+
+        if(BLEService!=null)
+        {
+            BLEService.close();
+            BLEService = null;
+        }
+
+        if(isBLEModule)
+             BLEService = new BLEService(activity, bluetoothAdapter);
+        else
+            BLEService = new BluetoothService(activity, bluetoothAdapter);
+
+        return BLEService!=null?true:false;
     }
 
+
     public static boolean connectBLE(String address) {
-        BLEService.setReadListener(Bufferlistener);
+        //BLEService.setReadListener(Bufferlistener);
         return BLEService.connect(address);
     }
 
@@ -41,7 +55,7 @@ public class Global {
 
         Log.d(TAG, "write: " + command.toString());
 
-        BLEService.writeCharacteristic(command.toString());
+        //BLEService.writeCharacteristic(command.toString());
         CMDService.write(command, listener);
     }
 
@@ -53,7 +67,7 @@ public class Global {
         return BLEService.getBleDevice();
     }
 
-    private static BLEService.BufferListener Bufferlistener = new BLEService.BufferListener() {
+    private static BufferListener Bufferlistener = new BufferListener() {
         public void onData(String type, int status, byte[] byteArray) {
             try {
                 Log.d(TAG, "type: " + type + " status: " + status + " Rev: " + (byteArray==null?"null":new String(byteArray)));
