@@ -16,7 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-public class BluetoothService implements BLEInterface{
+public class BluetoothTunnel implements BleInterface{
 
     private final static String TAG = "BluetoothService";
 
@@ -26,11 +26,11 @@ public class BluetoothService implements BLEInterface{
     private BluetoothAdapter bluetoothAdapter = null;
     private BluetoothSocket socket;
     private BluetoothDevice device;
-    private BufferListener readListener = null;
+    private BleListener readListener = null;
 
     private List<BluetoothDevice> devices = new ArrayList<BluetoothDevice>();
 
-    public BluetoothService(Activity activity, BluetoothAdapter bluetoothAdapter) {
+    public BluetoothTunnel(Activity activity, BluetoothAdapter bluetoothAdapter) {
         this.activity = activity;
         this.bluetoothAdapter = bluetoothAdapter;
 
@@ -73,6 +73,16 @@ public class BluetoothService implements BLEInterface{
             } catch (Exception ignored) {}
             socket = null;
         }
+    }
+
+    @Override
+    public void setReadListener(BleListener listener) {
+
+    }
+
+    @Override
+    public void writeCharacteristic(String value) {
+
     }
 
     @Override

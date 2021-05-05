@@ -1,20 +1,20 @@
-package com.ble_ex1;
-
+package com.ble_ex1.cmd_module;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.util.Date;
 
-public class CMD_API {
-
+public class CmdAPI {
     public static Command CreateCommand(String data) {
         Command command = null;
         try {
             JSONObject info  = new JSONObject(data);
             if(info!=null) {
-                switch (info.optString("command", "")) {
+                switch (info.optString("cmd", "")) {
                     case "firmware":
                         command = (Command) new Firmware(info);
+                        break;
+                    case "login":
+                        command = (Command) new LogIn(info);
                         break;
                     default:
                         command = (Command) new BaseCommand(info);
@@ -24,19 +24,19 @@ public class CMD_API {
         return command;
     }
 
-    public static class BaseCommand implements Command {
+    public static class BaseCommand {
         private JSONObject info = null;
-        private String name = "";
+        private String cmd = "";
         private long system_time = 0;
 
         public BaseCommand(JSONObject info) {
             this.info = info;
-            this.name = info.optString("command", "");
+            this.cmd = info.optString("cmd", "");
             this.system_time = new Date().getTime();
         }
 
-        public String getName() {
-            return name;
+        public String getCmd() {
+            return cmd;
         }
 
         public long getTime() {
@@ -46,6 +46,8 @@ public class CMD_API {
         public String toString() {
             return info.toString();
         }
+
+        public JSONObject getInfo() { return info; }
 
         public JSONObject execute() throws JSONException {
             return info;
@@ -58,6 +60,20 @@ public class CMD_API {
         }
 
         public JSONObject execute() throws  JSONException{
+            return new JSONObject().put("firmware", true);
+        }
+    }
+
+    public static class LogIn extends BaseCommand{
+        public LogIn(JSONObject info) {
+            super(info);
+        }
+
+
+        public JSONObject execute() throws  JSONException{
+            JSONObject info = getInfo();
+            String challenge = info.optString("challenge");
+
             return new JSONObject().put("firmware", true);
         }
     }

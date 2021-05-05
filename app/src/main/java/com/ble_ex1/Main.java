@@ -12,6 +12,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -24,8 +25,17 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
+
+import com.ble_ex1.cmd_module.CmdAPI;
+import com.ble_ex1.cmd_module.CmdListener;
+import com.ble_ex1.cmd_module.CmdObserver;
+import com.ble_ex1.cmd_module.Command;
+
 import org.json.JSONObject;
+
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -41,7 +51,7 @@ public class Main extends Activity {
 
     private String deviceName = null, deviceAddress = null;
 
-    private boolean isBLEModule = false;
+    private boolean isBLEModule = true;
 
     private BluetoothAdapter bluetoothAdapter = null;
 
@@ -87,6 +97,8 @@ public class Main extends Activity {
         initBluetoothAdapter();
 
         initUI();
+
+        initCmdService();
     }
 
     public void initBluetoothAdapter() {
@@ -98,7 +110,7 @@ public class Main extends Activity {
             bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         }
 
-        if(!Global.initBLEAdapter(this, bluetoothAdapter, isBLEModule)) {
+        if(!Global.initBleAdapter(this, bluetoothAdapter, isBLEModule)) {
             Toast.makeText(this, "Ble not supported.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -107,11 +119,19 @@ public class Main extends Activity {
         deviceAddress = intent.getStringExtra(Device.EXTRA_DEVICE_ADDRESS);
         deviceName = intent.getStringExtra(Device.EXTRA_DEVICE_NAME);
 
-        if(deviceAddress!=null && deviceAddress.length()>0
-                && deviceName!=null && deviceName.length()>0)
+        if(deviceAddress!=null && deviceAddress.length()>0 && deviceName!=null && deviceName.length()>0)
         {
-            Global.connectBLE(deviceAddress);
+            Global.connectBluetooth(deviceAddress);
         }
+    }
+
+    public void initCmdService() {
+        Global.registerCmdService(new CmdObserver("main", new CmdListener() {
+            @Override
+            public void onData(Command cmd) {
+                Log.d(TAG, "Rev:" + cmd.toString());
+            }
+        }));
     }
 
     public void initUI() {
@@ -123,14 +143,20 @@ public class Main extends Activity {
         btn_tx.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 try {
-                    String str = new JSONObject().put("command", edit_rx.getText().toString()).toString();
-                    Command command = CMD_API.CreateCommand(str);
+                    String str = edit_rx.getText().toString();
+                    JSONObject obj = new JSONObject();
+                    obj.put("command", "login");
 
-                    Global.writeBLE(command, new CommandListener(){
-                        public void onData(String status, JSONObject value) {
-                            Log.d(TAG, "status: " + status + " rev command: " + (value==null?"null":value.toString()));
-                        }
-                    });
+                    Command command = CmdAPI.CreateCommand(obj.toString());
+                    Global.sendCommand(command);
+
+
+//                    Global.sendCommand(command, new CmdListener(){
+//                        public void onData(Command cmd) {
+//                            Log.d(TAG, cmd.toString());
+//                        }
+//                    });
+
                 } catch (Exception ex) {}
             }
         });
@@ -144,15 +170,17 @@ public class Main extends Activity {
 
         btn_write = (Button)findViewById(R.id.btn_write);
         btn_write.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
             public void onClick(View v) {
                 try {
-                    int number = Integer.parseInt(edit_rx.getText().toString());
+                    String cmd = edit_rx.getText().toString();
+                    int number = Integer.parseInt(cmd);
                     if(number>0) {
                         String str = "";
                         for(int i=0;i<number;i++) str+="A";
-                        //Global.writeCharacteristic(new JSONObject().put("number", str).toString());
+                        //Global.writeBLE(CmdAPI.CreateCommand(new JSONObject().put("number", str).toString()));
                     }
-                } catch (Exception ex) {}
+                } catch (Exception ex) {Log.d(TAG, ex.toString());}
             }
         });
     }

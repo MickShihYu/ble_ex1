@@ -16,12 +16,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-class BLEService implements BLEInterface{
+class BleTunnel implements BleInterface {
 
     private final static String TAG = "BLEService";
     private BluetoothAdapter bluetoothAdapter = null;
     private BluetoothGatt bluetoothGatt = null;
-    private BufferListener readListener = null;
+    private BleListener readListener = null;
     private BluetoothGattCharacteristic characteristicTx = null,  characteristicRx = null;
     private List<BluetoothDevice> devices = new ArrayList<BluetoothDevice>();
     private Activity activity = null;
@@ -79,11 +79,11 @@ class BLEService implements BLEInterface{
         bluetoothGatt.readCharacteristic(characteristicRx);
     }
 
-    public void setReadListener(BufferListener listener) {
+    public void setReadListener(BleListener listener) {
         this.readListener = listener;
     }
 
-    public BLEService(Activity activity, BluetoothAdapter bluetoothAdapter) {
+    public BleTunnel(Activity activity, BluetoothAdapter bluetoothAdapter) {
         this.activity = activity;
         this.bluetoothAdapter = bluetoothAdapter;
     }
@@ -132,13 +132,21 @@ class BLEService implements BLEInterface{
 
     public void writeCharacteristic(String value) {
         try {
-            byte b = 0x00;
-            byte[] tmp = value.getBytes();
-            byte[] tx = new byte[tmp.length + 1];
-            tx[0] = b;
-            for(int i = 1; i < tmp.length + 1; i++) tx[i] = tmp[i - 1];
-            characteristicTx.setValue(tx);
-            writeCharacteristic(characteristicTx);
+            value =  value + "\n";
+
+            int strSize = value.length(), loopSize = 20;
+            int loop = strSize<=loopSize?1:(strSize/loopSize)+1;
+            int lastCount = strSize%loopSize;
+
+            for(int i=0;i<loop;i++) {
+                int start = i*20;
+                int end = i==loop-1?(loopSize*i)+lastCount:loopSize*i+20;
+
+                String temp = value.substring(start, end);
+                characteristicTx.setValue(temp.getBytes());
+                writeCharacteristic(characteristicTx);
+                Thread.sleep(3);
+            }
         } catch (Exception ex) { System.out.println(ex.toString()); }
     }
 
@@ -177,7 +185,6 @@ class BLEService implements BLEInterface{
             if (device != null) {
                 if (devices.indexOf(device) == -1) {
                     devices.add(device);
-
                     //Log.d(TAG, "" + device.getAddress() + " , " + device.getName());
                 }
             }

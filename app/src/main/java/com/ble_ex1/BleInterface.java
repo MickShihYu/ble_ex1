@@ -5,13 +5,15 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import java.util.List;
 
-interface BLEInterface {
+interface BleInterface {
     boolean connect(final String address);
-    void scanLeDevice();
     List<BluetoothDevice> getBleDevice();
+    void scanLeDevice();
+    void setReadListener(BleListener listener);
+    void writeCharacteristic(String value);
     void close();
 }
 
-interface BufferListener {
+interface BleListener {
     void onData(String type, int status, byte[] value);
 }

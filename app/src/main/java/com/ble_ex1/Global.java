@@ -3,9 +3,13 @@ package com.ble_ex1;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
 import android.content.Intent;
 import android.util.Log;
+
+import com.ble_ex1.cmd_module.CmdListener;
+import com.ble_ex1.cmd_module.CmdObserver;
+import com.ble_ex1.cmd_module.Command;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -17,104 +21,59 @@ public class Global {
     public static final UUID UUID_BLE_HC08_RX = UUID.fromString("000ffe1-0000-1000-8000-00805f9b34fb");
     public static final UUID UUID_BLE_HC08_SERVICE = UUID.fromString("0000ffe0-0000-1000-8000-00805f9b34fb");
 
-    public final static String BLE_STATUS = "status";
-    public final static String BLE_CHARACTERISTIC = "characteristic";
-    public static final String BLE_TIME_OUT = "time_out";
+    public static final String BLE_STATUS = "status";
+    public static final String BLE_CHARACTERISTIC = "characteristic";
+    public static final String BLE_TIME_OUT = "timeout";
     public static final String BLE_EXECUTE = "execute";
 
-    private static BLEInterface BLEService = null;
-    private final static CMDService CMDService = new CMDService();
+
+    public static final String CMD_TIME_OUT = "timeout";
+
+    private static BleInterface bleService = null;
+    private final static CmdService cmdService = new CmdService();
     private static Activity global_activity = null;
 
-    private static StringBuffer buffer = new StringBuffer();
-
-    public static boolean initBLEAdapter(Activity activity, BluetoothAdapter bluetoothAdapter, boolean isBLEModule) {
+    public static boolean initBleAdapter(Activity activity, BluetoothAdapter bluetoothAdapter, boolean isBleModule) {
         global_activity = activity;
+        if(bleService!=null)
+            bleService.close();
 
-        if(BLEService!=null)
-        {
-            BLEService.close();
-            BLEService = null;
-        }
-
-        if(isBLEModule)
-             BLEService = new BLEService(activity, bluetoothAdapter);
-        else
-            BLEService = new BluetoothService(activity, bluetoothAdapter);
-
-        return BLEService!=null?true:false;
+        bleService = isBleModule?new BleTunnel(activity, bluetoothAdapter):new BluetoothTunnel(activity, bluetoothAdapter);
+        return bleService!=null?true:false;
     }
 
-
-    public static boolean connectBLE(String address) {
-        //BLEService.setReadListener(Bufferlistener);
-        return BLEService.connect(address);
+    public static boolean connectBluetooth(String address) {
+        bleService.setReadListener(cmdService.getBleListener());
+        return bleService.connect(address);
     }
 
-    public static void writeBLE(Command command, CommandListener listener) {
+    public static void registerCmdService(CmdObserver observer) {
+        cmdService.register(observer);
+    }
 
+    public static void sendCommand(Command command) {
+        bleService.writeCharacteristic(command.toString());
         Log.d(TAG, "write: " + command.toString());
+    }
 
-        //BLEService.writeCharacteristic(command.toString());
-        CMDService.write(command, listener);
+    public static void sendCommand(Command command, CmdListener listener) {
+        bleService.writeCharacteristic(command.toString());
+        cmdService.sendCommand(command, listener);
+        Log.d(TAG, "async write: " + command.toString());
     }
 
     public static void scanLeDevice() {
-        BLEService.scanLeDevice();
+        bleService.scanLeDevice();
     }
 
     public static List<BluetoothDevice> getBleDevice() {
-        return BLEService.getBleDevice();
+        return bleService.getBleDevice();
     }
-
-    private static BufferListener Bufferlistener = new BufferListener() {
-        public void onData(String type, int status, byte[] byteArray) {
-            try {
-                Log.d(TAG, "type: " + type + " status: " + status + " Rev: " + (byteArray==null?"null":new String(byteArray)));
-
-                switch(type) {
-                    case BLE_STATUS:
-                        sendBroadcastStatus(status);
-                        break;
-                    case BLE_CHARACTERISTIC:
-                        addBuffer(byteArray);
-                        break;
-                }
-            } catch (Exception ex) { System.out.println(ex.toString()); }
-        }
-    };
-
 
     private static void sendBroadcastStatus(int status) {
         Intent intent = new Intent();
         intent.setAction(Global.BLE_STATUS);
         intent.putExtra(Global.BLE_STATUS, status);
         global_activity.sendBroadcast(intent);
-    }
-
-    private static void addBuffer(byte[] byteArray) {
-        try {
-
-            if(byteArray==null) return;
-
-            String str = new String(byteArray);
-            int start = str.lastIndexOf("$");
-            int end = str.indexOf("#");
-
-            if (start != -1 && end != -1) {
-                str = str.substring(start + 1, end);
-                CMDService.receive(CMD_API.CreateCommand(str));
-            } else if (start != -1) {
-                buffer = new StringBuffer();
-                buffer.append(str.substring(start + 1));
-            } else if (end != -1) {
-                buffer.append(str.substring(0, end));
-                CMDService.receive(CMD_API.CreateCommand(buffer.toString()));
-                buffer = new StringBuffer();
-            } else {
-                buffer.append(str);
-            }
-
-        } catch (Exception ex) { System.out.println(ex.toString()); }
     }
 }

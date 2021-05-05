@@ -1,15 +1,12 @@
-package com.ble_ex1;
+package com.ble_ex1.cmd_module;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-interface Command {
-    String getName();
+public interface Command {
+    String getCmd();
     String toString();
     JSONObject execute() throws JSONException;
+    JSONObject getInfo();
     long getTime();
-}
-
-interface CommandListener {
-    void onData(String status,  JSONObject value);
 }
