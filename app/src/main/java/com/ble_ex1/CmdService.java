@@ -72,25 +72,23 @@ public class CmdService implements Observable {
         } catch (Exception ex) { System.out.println(ex.toString()); }
     }
 
-    public void sendCommand(Command cmd, CmdListener cmdListener) {
-        if(cmd == null || cmdListener == null) return;
-        try {
+    public Command syncCommand(Command cmd) {
 
+        try {
             long startTime = System.currentTimeMillis();
             while(System.currentTimeMillis()-startTime < 3*1000) {
+                if(lastCommand == null) continue;
                 if(isNewCommand(cmd, lastCommand)) {
-                    cmdListener.onData(null);
-                    return;
+                    return lastCommand;
                 }
                 Thread.sleep(10);
             }
         } catch (Exception ex) { System.out.println(ex.toString()); }
-
-        cmdListener.onData(null);
+        return null;
     }
 
     public boolean isNewCommand(Command curCmd, Command disCmd) {
-        return curCmd.getCmd().equals(disCmd.getCmd()) && curCmd.getTime()>disCmd.getTime() ? true : false;
+        return curCmd.getCmd().equals(disCmd.getCmd()) && curCmd.getTime() < disCmd.getTime() ? true : false;
     }
 
     @Override

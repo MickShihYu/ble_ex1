@@ -24,7 +24,7 @@ public class CmdAPI {
         return command;
     }
 
-    public static class BaseCommand {
+    public static class BaseCommand implements Command {
         private JSONObject info = null;
         private String cmd = "";
         private long system_time = 0;
@@ -32,7 +32,7 @@ public class CmdAPI {
         public BaseCommand(JSONObject info) {
             this.info = info;
             this.cmd = info.optString("cmd", "");
-            this.system_time = new Date().getTime();
+            this.system_time = System.currentTimeMillis();
         }
 
         public String getCmd() {
@@ -68,7 +68,6 @@ public class CmdAPI {
         public LogIn(JSONObject info) {
             super(info);
         }
-
 
         public JSONObject execute() throws  JSONException{
             JSONObject info = getInfo();

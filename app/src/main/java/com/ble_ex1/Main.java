@@ -12,7 +12,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -25,17 +24,12 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
-
 import com.ble_ex1.cmd_module.CmdAPI;
 import com.ble_ex1.cmd_module.CmdListener;
 import com.ble_ex1.cmd_module.CmdObserver;
 import com.ble_ex1.cmd_module.Command;
-
 import org.json.JSONObject;
-
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -50,21 +44,18 @@ public class Main extends Activity {
     private Dialog dialog = null;
 
     private String deviceName = null, deviceAddress = null;
-
     private boolean isBLEModule = true;
+    private CmdObserver cmdObserver = null;
 
     private BluetoothAdapter bluetoothAdapter = null;
-
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver(){
         @Override
         public void onReceive(Context context, Intent intent){
             String action = intent.getAction();
-
             switch (action){
                 case Global.BLE_STATUS:
                     int status = intent.getIntExtra(Global.BLE_STATUS, 0);
-
-                    Log.d(TAG, "Receive action: " + action + " status: " + status);
+                    //Log.d(TAG, "Receive action: " + action + " status: " + status);
                     setLEDStatus(status);
                     break;
             }
@@ -74,11 +65,21 @@ public class Main extends Activity {
 
     protected void onResume() {
         super.onResume();
-
         IntentFilter filter = new IntentFilter();
         filter.addAction(Global.BLE_STATUS);
         filter.addAction(Global.BLE_EXECUTE);
         registerReceiver(broadcastReceiver,filter);
+    }
+
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+        setContentView(R.layout.main);
+
+        registerPermissions();
+        initBluetoothAdapter();
+        initUI();
+        initCmdService();
     }
 
     protected void onPause() {
@@ -86,19 +87,12 @@ public class Main extends Activity {
         unregisterReceiver(broadcastReceiver);
     }
 
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
-        setContentView(R.layout.main);
-
-        registerPermissions();
-
-        initBluetoothAdapter();
-
-        initUI();
-
-        initCmdService();
+    protected void onStop() {
+        super.onStop();
+        if(cmdObserver!=null) {
+            Global.unregisterCmdService(cmdObserver);
+            cmdObserver = null;
+        }
     }
 
     public void initBluetoothAdapter() {
@@ -126,12 +120,15 @@ public class Main extends Activity {
     }
 
     public void initCmdService() {
-        Global.registerCmdService(new CmdObserver("main", new CmdListener() {
-            @Override
-            public void onData(Command cmd) {
-                Log.d(TAG, "Rev:" + cmd.toString());
-            }
-        }));
+        if(cmdObserver == null) {
+            cmdObserver = new CmdObserver("main", new CmdListener() {
+                @Override
+                public void onData(Command cmd) {
+                    Log.d(TAG, "Main rev: " + cmd.toString());
+                }
+            });
+            Global.registerCmdService(cmdObserver);
+        }
     }
 
     public void initUI() {
@@ -145,17 +142,13 @@ public class Main extends Activity {
                 try {
                     String str = edit_rx.getText().toString();
                     JSONObject obj = new JSONObject();
-                    obj.put("command", "login");
+                    obj.put("cmd", "login");
 
                     Command command = CmdAPI.CreateCommand(obj.toString());
-                    Global.sendCommand(command);
+                    //Global.sendCommand(command);
+                    command = Global.syncCommand(command);
 
-
-//                    Global.sendCommand(command, new CmdListener(){
-//                        public void onData(Command cmd) {
-//                            Log.d(TAG, cmd.toString());
-//                        }
-//                    });
+                    Log.d(TAG, "sync rev: " + command.toString());
 
                 } catch (Exception ex) {}
             }
@@ -170,7 +163,6 @@ public class Main extends Activity {
 
         btn_write = (Button)findViewById(R.id.btn_write);
         btn_write.setOnClickListener(new View.OnClickListener() {
-            @RequiresApi(api = Build.VERSION_CODES.O)
             public void onClick(View v) {
                 try {
                     String cmd = edit_rx.getText().toString();

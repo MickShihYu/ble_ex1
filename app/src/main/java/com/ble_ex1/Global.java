@@ -26,11 +26,10 @@ public class Global {
     public static final String BLE_TIME_OUT = "timeout";
     public static final String BLE_EXECUTE = "execute";
 
-
     public static final String CMD_TIME_OUT = "timeout";
 
+    private static final CmdService cmdService = new CmdService();
     private static BleInterface bleService = null;
-    private final static CmdService cmdService = new CmdService();
     private static Activity global_activity = null;
 
     public static boolean initBleAdapter(Activity activity, BluetoothAdapter bluetoothAdapter, boolean isBleModule) {
@@ -51,15 +50,21 @@ public class Global {
         cmdService.register(observer);
     }
 
+    public static void unregisterCmdService(CmdObserver observer) {
+        cmdService.unregister(observer);
+    }
+
     public static void sendCommand(Command command) {
         bleService.writeCharacteristic(command.toString());
         Log.d(TAG, "write: " + command.toString());
     }
 
-    public static void sendCommand(Command command, CmdListener listener) {
-        bleService.writeCharacteristic(command.toString());
-        cmdService.sendCommand(command, listener);
+    public static Command syncCommand(Command command) {
+
         Log.d(TAG, "async write: " + command.toString());
+
+        bleService.writeCharacteristic(command.toString());
+        return cmdService.syncCommand(command);
     }
 
     public static void scanLeDevice() {
