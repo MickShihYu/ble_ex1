@@ -1,5 +1,7 @@
 package com.ble_ex1;
 
+import android.bluetooth.BluetoothProfile;
+import android.content.Intent;
 import android.util.Log;
 
 import com.ble_ex1.cmd_module.CmdAPI;
@@ -18,24 +20,33 @@ public class CmdService implements Observable {
     private ArrayList<Observer> observerList = new ArrayList<Observer>();
     private StringBuffer buffer = new StringBuffer();
     private Command lastCommand = null;
+    private boolean bleConnectStatus = false;
 
     public BleListener bleListener = new BleListener() {
         public void onData(String type, int status, byte[] byteArray) {
             try {
-
                 Log.d(TAG, "type: " + type + " status: " + status + " Rev: " + (byteArray==null?"null":new String(byteArray)));
 
-                switch(type) {
-                    case Global.BLE_STATUS:
-                        //sendBroadcastStatus(status);
-                        break;
-                    case Global.BLE_CHARACTERISTIC:
-                        addBuffer(byteArray);
-                        break;
+                if(type.equals(Global.BLE_STATUS)) {
+                    switch (status) {
+                        case BluetoothProfile.STATE_CONNECTED:
+                            inform(Global.BLE_CONNECTED, null);
+                            bleConnectStatus = true;
+                            break;
+                        default:
+                            inform(Global.BLE_DISCONNECTED, null);
+                            bleConnectStatus = false;
+                    }
+                } else {
+                    addBuffer(byteArray);
                 }
             } catch (Exception ex) { System.out.println(ex.toString()); }
         }
     };
+
+    public boolean getBleConnectStatus() {
+        return bleConnectStatus;
+    }
 
     private void addBuffer(byte[] byteArray) {
         try {
@@ -68,7 +79,7 @@ public class CmdService implements Observable {
         try {
             JSONObject object = new JSONObject(data);
             lastCommand = CmdAPI.CreateCommand(object.toString());
-            inform(lastCommand);
+            inform(Global.BLE_CHARACTERISTIC, lastCommand);
         } catch (Exception ex) { System.out.println(ex.toString()); }
     }
 
@@ -102,9 +113,9 @@ public class CmdService implements Observable {
     }
 
     @Override
-    public void inform(Command cmd) {
+    public void inform(String status, Command cmd) {
         for(Observer observer : observerList){
-            observer.update(cmd);
+            observer.update(status, cmd);
         }
     }
 }

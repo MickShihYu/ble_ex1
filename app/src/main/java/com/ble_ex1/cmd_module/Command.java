@@ -6,7 +6,7 @@ import org.json.JSONObject;
 public interface Command {
     String getCmd();
     String toString();
-    JSONObject execute() throws JSONException;
-    JSONObject getInfo();
     long getTime();
+    boolean getStatus();
+    JSONObject getContent();
 }

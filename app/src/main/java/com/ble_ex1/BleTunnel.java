@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
+import android.content.Intent;
 import android.util.Log;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,35 +19,40 @@ import java.util.UUID;
 
 class BleTunnel implements BleInterface {
 
-    private final static String TAG = "BLEService";
+    private final static String TAG = "BleTunnel";
     private BluetoothAdapter bluetoothAdapter = null;
     private BluetoothGatt bluetoothGatt = null;
     private BleListener readListener = null;
     private BluetoothGattCharacteristic characteristicTx = null,  characteristicRx = null;
     private List<BluetoothDevice> devices = new ArrayList<BluetoothDevice>();
     private Activity activity = null;
+    private boolean connectStatus = false;
 
     private BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
 
+            Log.d(TAG, "Connect status: " + status);
             if(readListener!=null) readListener.onData(Global.BLE_STATUS, newState, null);
 
             switch (newState) {
                 case BluetoothProfile.STATE_CONNECTED:
                     bluetoothGatt.discoverServices();
+                    connectStatus = true;
                     break;
                 case BluetoothProfile.STATE_DISCONNECTED:
-                    break;
+                default:
+                    connectStatus = false;
             }
         }
 
         public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
-            Log.w(TAG, "Rssi status: " + status);
+            Log.d(TAG, "Rssi status: " + status);
         };
 
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-            Log.w(TAG, "Discovered status: " + status);
+            Log.d(TAG, "Discovered status: " + status);
             if (status == BluetoothGatt.GATT_SUCCESS) getGattService();
+
         }
 
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
@@ -60,6 +66,8 @@ class BleTunnel implements BleInterface {
 
     private void characteristicRead(BluetoothGattCharacteristic characteristic, int status) {
         try {
+            Log.d(TAG, "Read status: " + status);
+
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (readListener != null) {
                     readListener.onData(Global.BLE_CHARACTERISTIC, status, characteristic.getValue());
@@ -79,6 +87,9 @@ class BleTunnel implements BleInterface {
         bluetoothGatt.readCharacteristic(characteristicRx);
     }
 
+    public boolean getConnectStatus() {
+        return connectStatus;
+    }
     public void setReadListener(BleListener listener) {
         this.readListener = listener;
     }
@@ -181,8 +192,8 @@ class BleTunnel implements BleInterface {
 
     private BluetoothAdapter.LeScanCallback bleScanCallback = new BluetoothAdapter.LeScanCallback() {
         public void onLeScan(final BluetoothDevice device, final int rssi, byte[] scanRecord) {
-            //if (device != null && device.getName()!=null && device.getName().length()>0) {
-            if (device != null) {
+            //if (device != null) {
+            if (device != null && device.getName()!=null && device.getName().length()>0) {
                 if (devices.indexOf(device) == -1) {
                     devices.add(device);
                     //Log.d(TAG, "" + device.getAddress() + " , " + device.getName());

@@ -25,15 +25,17 @@ public class Global {
     public static final String BLE_CHARACTERISTIC = "characteristic";
     public static final String BLE_TIME_OUT = "timeout";
     public static final String BLE_EXECUTE = "execute";
+    public static final String BLE_CONNECTED = "connected";
+    public static final String BLE_DISCONNECTED = "disconnected";
 
     public static final String CMD_TIME_OUT = "timeout";
 
-    private static final CmdService cmdService = new CmdService();
     private static BleInterface bleService = null;
-    private static Activity global_activity = null;
+    private static CmdService cmdService = new CmdService();
+    private static CmdSchedule cmdSchedule = new CmdSchedule();
+
 
     public static boolean initBleAdapter(Activity activity, BluetoothAdapter bluetoothAdapter, boolean isBleModule) {
-        global_activity = activity;
         if(bleService!=null)
             bleService.close();
 
@@ -44,6 +46,10 @@ public class Global {
     public static boolean connectBluetooth(String address) {
         bleService.setReadListener(cmdService.getBleListener());
         return bleService.connect(address);
+    }
+
+    public static boolean bleConnectStatus() {
+        return bleService.getConnectStatus();
     }
 
     public static void registerCmdService(CmdObserver observer) {
@@ -73,12 +79,5 @@ public class Global {
 
     public static List<BluetoothDevice> getBleDevice() {
         return bleService.getBleDevice();
-    }
-
-    private static void sendBroadcastStatus(int status) {
-        Intent intent = new Intent();
-        intent.setAction(Global.BLE_STATUS);
-        intent.putExtra(Global.BLE_STATUS, status);
-        global_activity.sendBroadcast(intent);
     }
 }

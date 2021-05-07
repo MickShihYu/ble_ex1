@@ -2,6 +2,8 @@ package com.ble_ex1;
 
 import android.util.Log;
 
+import org.json.JSONObject;
+
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -10,16 +12,19 @@ public class Tools {
     private final static String AESKey = "billion35753268";
 
     public static String Encrypt(String src) throws Exception {
-        byte[] temp = AESKey.getBytes("utf-8");
-        byte[] raw = new byte[16];
-        System.arraycopy(temp, 0, raw, 0, temp.length);
+        try {
+            byte[] temp = AESKey.getBytes("utf-8");
+            byte[] raw = new byte[16];
+            System.arraycopy(temp, 0, raw, 0, temp.length);
 
-        SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
-        String hexStr = byte2Hex(cipher.doFinal(string2Hex(src)));
+            SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
+            String hexStr = byte2Hex(cipher.doFinal(string2Hex(src)));
 
-        return hexStr.substring(0, hexStr.length()/2);
+            return hexStr.substring(0, hexStr.length()/2);
+        } catch (Exception ex) { System.out.println(ex.toString()); }
+        return null;
     }
 
     public static byte[] string2Hex(String hex) {

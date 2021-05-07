@@ -76,6 +76,11 @@ public class BluetoothTunnel implements BleInterface{
     }
 
     @Override
+    public boolean getConnectStatus() {
+        return true;
+    }
+
+    @Override
     public void setReadListener(BleListener listener) {
 
     }

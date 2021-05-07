@@ -11,6 +11,7 @@ interface BleInterface {
     void scanLeDevice();
     void setReadListener(BleListener listener);
     void writeCharacteristic(String value);
+    boolean getConnectStatus();
     void close();
 }
 

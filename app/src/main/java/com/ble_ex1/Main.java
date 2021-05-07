@@ -48,27 +48,12 @@ public class Main extends Activity {
     private CmdObserver cmdObserver = null;
 
     private BluetoothAdapter bluetoothAdapter = null;
-    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver(){
-        @Override
-        public void onReceive(Context context, Intent intent){
-            String action = intent.getAction();
-            switch (action){
-                case Global.BLE_STATUS:
-                    int status = intent.getIntExtra(Global.BLE_STATUS, 0);
-                    //Log.d(TAG, "Receive action: " + action + " status: " + status);
-                    setLEDStatus(status);
-                    break;
-            }
-        }
-
-    };
 
     protected void onResume() {
         super.onResume();
         IntentFilter filter = new IntentFilter();
         filter.addAction(Global.BLE_STATUS);
         filter.addAction(Global.BLE_EXECUTE);
-        registerReceiver(broadcastReceiver,filter);
     }
 
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,7 +69,6 @@ public class Main extends Activity {
 
     protected void onPause() {
         super.onPause();
-        unregisterReceiver(broadcastReceiver);
     }
 
     protected void onStop() {
@@ -123,8 +107,14 @@ public class Main extends Activity {
         if(cmdObserver == null) {
             cmdObserver = new CmdObserver("main", new CmdListener() {
                 @Override
-                public void onData(Command cmd) {
-                    Log.d(TAG, "Main rev: " + cmd.toString());
+                public void onData(String status, Command cmd) {
+
+                    if(status.equals(Global.BLE_CHARACTERISTIC)) {
+                        Log.d(TAG, "char rev: " + cmd.toString());
+                    } else {
+                        Log.d(TAG, "connect status: " + status);
+                        setLEDStatus(status);
+                    }
                 }
             });
             Global.registerCmdService(cmdObserver);
@@ -177,11 +167,11 @@ public class Main extends Activity {
         });
     }
 
-    private void setLEDStatus(int status) {
+    private void setLEDStatus(String status) {
         runOnUiThread(new Runnable() {
             public void run() {
                 switch (status) {
-                    case BluetoothProfile.STATE_CONNECTED:
+                    case Global.BLE_CONNECTED:
                         img_status_led.setImageResource(R.drawable.circle_connect);
                         break;
                     default:
