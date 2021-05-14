@@ -4,6 +4,11 @@ import android.util.Log;
 
 import org.json.JSONObject;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -41,4 +46,11 @@ public class Tools {
             result += Integer.toString( ( bytes[i] & 0xff ) + 0x100, 16).substring( 1 );
         return result.toUpperCase();
     }
+
+    public static String getDate(long timeStamp) {
+        //DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        DateFormat dateFormat = new SimpleDateFormat(" HH:mm:ss");
+        return dateFormat.format(new Date(timeStamp));
+    }
 }
+

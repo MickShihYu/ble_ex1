@@ -20,6 +20,7 @@ import com.ble_ex1.cmd_module.CmdSchedule;
 import com.ble_ex1.cmd_module.CmdService;
 import com.ble_ex1.cmd_module.Command;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -75,7 +76,12 @@ public class Global {
         cmdService.register(observer);
     }
 
-
+    public static ArrayList<Command> getCommandHistory() {
+        return cmdService.getCommandHistory();
+    }
+    public static void clearCommandHistory() {
+        cmdService.clearCommandHistory();
+    }
 
     public static void unregisterCmdService(CmdObserver observer) {
         cmdService.unregister(observer);

@@ -202,6 +202,9 @@ public class Main extends AppCompatActivity implements BottomNavigationView.OnNa
                 } else {
                     fragmentTransaction.add(R.id.container_main, mLogFragment, LOG);
                 }
+
+                fragmentTransaction.detach(mLogFragment);
+                fragmentTransaction.attach(mLogFragment);
                 fragmentTransaction.commit();
 
                 return true;

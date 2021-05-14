@@ -12,6 +12,7 @@ public class CmdService implements Observable {
     private static final String TAG = "CmdService";
     private static final double CMD_RECEIVE_TIMEOUT = 1 * 1000;
     private ArrayList<Observer> observerList = new ArrayList<Observer>();
+    private ArrayList<Command> cmdList = new ArrayList<Command>();
     private StringBuffer buffer = new StringBuffer();
     private Command lastCommand = null;
     private boolean bleConnectStatus = false;
@@ -72,8 +73,12 @@ public class CmdService implements Observable {
     public void informCommand(String data) {
         try {
             JSONObject object = new JSONObject(data);
-            lastCommand = CmdAPI.CreateCommand(object.toString());
-            inform(Global.BLE_CHARACTERISTIC, lastCommand);
+            Command cmd = CmdAPI.CreateCommand(object.toString());
+            if(cmd != null) {
+                addCommandHistory(cmd);
+                lastCommand = cmd;
+                inform(Global.BLE_CHARACTERISTIC, cmd);
+            }
         } catch (Exception ex) { System.out.println(ex.toString()); }
     }
 
@@ -82,6 +87,9 @@ public class CmdService implements Observable {
         try {
             Log.d(TAG, "----------------------------------------");
             Log.d(TAG, "async write: " + cmd.toString());
+
+            addCommandHistory(cmd);
+
             long startTime = System.currentTimeMillis();
             while(System.currentTimeMillis()-startTime < CMD_RECEIVE_TIMEOUT) {
                 if(lastCommand == null) continue;
@@ -94,6 +102,18 @@ public class CmdService implements Observable {
         } catch (Exception ex) { System.out.println(ex.toString()); }
         Log.d(TAG, "async rev: null");
         return null;
+    }
+
+    public ArrayList<Command> getCommandHistory() {
+        return cmdList;
+    }
+
+    public void addCommandHistory(Command cmd) {
+        cmdList.add(cmd);
+    }
+
+    public void clearCommandHistory() {
+        cmdList.clear();
     }
 
     public boolean isNewCommand(Command curCmd, Command disCmd) {
