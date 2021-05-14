@@ -1,82 +1,136 @@
 package com.ble_ex1;
+
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.KeyEvent;
-import android.view.Menu;
+import android.support.annotation.NonNull;
+import android.support.annotation.StringDef;
+import android.support.design.widget.BottomNavigationView;
+import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.Window;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
-import androidx.core.app.ActivityCompat;
-import com.ble_ex1.cmd_module.CmdAPI;
+
 import com.ble_ex1.cmd_module.CmdListener;
 import com.ble_ex1.cmd_module.CmdObserver;
-import com.ble_ex1.cmd_module.Command;
-import org.json.JSONObject;
-import java.util.Timer;
-import java.util.TimerTask;
+import com.ble_ex1.fragments.DashboardFragment;
+import com.ble_ex1.fragments.DetailFragment;
+import com.ble_ex1.fragments.HomeFragment;
+import com.ble_ex1.fragments.LogFragment;
 
-public class Main extends Activity {
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+public class Main extends AppCompatActivity implements BottomNavigationView.OnNavigationItemSelectedListener {
+
     private static final String TAG = Main.class.getSimpleName();
-    private static final long SCAN_PERIOD = 3000;
-
-    private TextView text_rx = null;
-    private EditText edit_rx = null;
-    private Button btn_tx = null, btn_connect = null, btn_write;
-    private ImageView img_status_led = null;
-    private Dialog dialog = null;
-
     private String deviceName = null, deviceAddress = null;
     private boolean isBLEModule = true;
+    private Button btn_connect = null;
+
+    private Activity activity = null;
+    private BluetoothAdapter bluetoothAdapter = null;
     private CmdObserver cmdObserver = null;
 
-    private BluetoothAdapter bluetoothAdapter = null;
+    private FragmentManager mFragmentManager;
+    private HomeFragment mHomeFragment;
+    private DashboardFragment mDashboardFragment;
+    private LogFragment mLogFragment;
 
-    protected void onResume() {
-        super.onResume();
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(Global.BLE_STATUS);
-        filter.addAction(Global.BLE_EXECUTE);
-    }
+    @Retention(RetentionPolicy.SOURCE)
+    @StringDef({
+            HOME, DASHBOARD, LOG, DETAIL
+    })
+    public @interface FragmentType {}
 
+    public static final String HOME = "HOME";
+    public static final String DASHBOARD = "DASHBOARD";
+    public static final String LOG = "Log";
+    public static final String DETAIL = "DETAIL";
+    public static final String DETAIL_MESSAGE = "DetailMessage";
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.main);
+
+        activity = this;
+        initUI();
+
+        ((BottomNavigationView) findViewById(R.id.navigation)).setOnNavigationItemSelectedListener(this);
+        ((BottomNavigationView) findViewById(R.id.navigation)).setSelectedItemId(R.id.navigation_home);
 
         registerPermissions();
         initBluetoothAdapter();
-        initUI();
         initCmdService();
+
+        setBleConnectStatus(Global.bleConnectStatus() ? Global.BLE_CONNECTED : Global.BLE_DISCONNECTED);
     }
 
-    protected void onPause() {
-        super.onPause();
-    }
-
-    protected void onStop() {
+    public void onStop() {
         super.onStop();
         if(cmdObserver!=null) {
             Global.unregisterCmdService(cmdObserver);
             cmdObserver = null;
         }
+    }
+
+    public void initUI() {
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.setTitle("BLE");
+        toolbar.setSubtitle("");
+        //toolbar.setLogo(R.mipmap.ic_launcher);
+        //toolbar.inflateMenu(R.menu.navigation);
+
+        mFragmentManager = getFragmentManager();
+
+        btn_connect = (Button)findViewById(R.id.btn_ble_connect);
+        btn_connect.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                Global.searchDevice(activity);
+            }
+        });
+    }
+
+    public void initCmdService() {
+        if(cmdObserver == null) {
+            cmdObserver = new CmdObserver("main", new CmdListener() {
+                @Override
+                public void onData(String status, Object obj) {
+                    if(status.equals(Global.BLE_CHARACTERISTIC)) {
+                    } else {
+                        setBleConnectStatus(status);
+                    }
+                }
+            });
+            Global.registerCmdService(cmdObserver);
+        }
+    }
+
+    private void setBleConnectStatus(final String status) {
+        activity.runOnUiThread(new Runnable() {
+            public void run() {
+                switch (status) {
+                    case Global.BLE_CONNECTED:
+                        //img_status_led.setImageResource(R.drawable.circle_connect);
+                        btn_connect.setText("Connected");
+                        break;
+                    default:
+                        btn_connect.setText("Disconnected");
+                        //img_status_led.setImageResource(R.drawable.circle_close);
+                }
+            }
+        });
     }
 
     public void initBluetoothAdapter() {
@@ -103,119 +157,78 @@ public class Main extends Activity {
         }
     }
 
-    public void initCmdService() {
-        if(cmdObserver == null) {
-            cmdObserver = new CmdObserver("main", new CmdListener() {
-                @Override
-                public void onData(String status, Command cmd) {
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
 
-                    if(status.equals(Global.BLE_CHARACTERISTIC)) {
-                        Log.d(TAG, "char rev: " + cmd.toString());
-                    } else {
-                        Log.d(TAG, "connect status: " + status);
-                        setLEDStatus(status);
-                    }
-                }
-            });
-            Global.registerCmdService(cmdObserver);
+        FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
+        if (mFragmentManager.findFragmentByTag(DETAIL) != null) {
+            mFragmentManager.popBackStack();
         }
-    }
 
-    public void initUI() {
-        img_status_led = (ImageView) findViewById(R.id.img_status_led);
-        text_rx = (TextView)findViewById(R.id.text_rx);
-        edit_rx = (EditText)findViewById(R.id.edit_tx);
+        switch (item.getItemId()) {
+            case R.id.navigation_home:
 
-        btn_tx = (Button)findViewById(R.id.btn_tx);
-        btn_tx.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                try {
-                    String str = edit_rx.getText().toString();
-                    JSONObject obj = new JSONObject();
-                    obj.put("cmd", "login");
-
-                    Command command = CmdAPI.CreateCommand(obj.toString());
-                    //Global.sendCommand(command);
-                    command = Global.syncCommand(command);
-
-                    Log.d(TAG, "sync rev: " + command.toString());
-
-                } catch (Exception ex) {}
-            }
-        });
-
-        btn_connect = (Button)findViewById(R.id.btn_connect);
-        btn_connect.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                searchDevice();
-            }
-        });
-
-        btn_write = (Button)findViewById(R.id.btn_write);
-        btn_write.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                try {
-                    String cmd = edit_rx.getText().toString();
-                    int number = Integer.parseInt(cmd);
-                    if(number>0) {
-                        String str = "";
-                        for(int i=0;i<number;i++) str+="A";
-                        //Global.writeBLE(CmdAPI.CreateCommand(new JSONObject().put("number", str).toString()));
-                    }
-                } catch (Exception ex) {Log.d(TAG, ex.toString());}
-            }
-        });
-    }
-
-    private void setLEDStatus(String status) {
-        runOnUiThread(new Runnable() {
-            public void run() {
-                switch (status) {
-                    case Global.BLE_CONNECTED:
-                        img_status_led.setImageResource(R.drawable.circle_connect);
-                        break;
-                    default:
-                        img_status_led.setImageResource(R.drawable.circle_close);
+                if (mHomeFragment == null) mHomeFragment = new HomeFragment();
+                if (mDashboardFragment != null) fragmentTransaction.hide(mDashboardFragment);
+                if (mLogFragment != null) fragmentTransaction.hide(mLogFragment);
+                if (mHomeFragment.isAdded()) {
+                    fragmentTransaction.show(mHomeFragment);
+                } else {
+                    fragmentTransaction.add(R.id.container_main, mHomeFragment, HOME);
                 }
-            }
-        });
-    }
+                fragmentTransaction.commit();
 
-    public void searchDevice() {
-        showRoundProcessDialog(Main.this, R.layout.loading_process_dialog_anim);
+                return true;
+            case R.id.navigation_dashboard:
 
-        Global.scanLeDevice();
-
-        Timer mTimer = new Timer();
-        mTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                Intent deviceListIntent = new Intent(getApplicationContext(), Device.class);
-                startActivity(deviceListIntent);
-                closeDialog();
-            }
-        }, SCAN_PERIOD);
-    }
-
-    public void showRoundProcessDialog(Context mContext, int layout) {
-        DialogInterface.OnKeyListener keyListener = new DialogInterface.OnKeyListener() {
-            public boolean onKey(DialogInterface dialog, int keyCode,
-                                 KeyEvent event) {
-                if (keyCode == KeyEvent.KEYCODE_HOME || keyCode == KeyEvent.KEYCODE_SEARCH) {
-                    return true;
+                if (mDashboardFragment == null) mDashboardFragment = new DashboardFragment();
+                if (mHomeFragment != null) fragmentTransaction.hide(mHomeFragment);
+                if (mLogFragment != null) fragmentTransaction.hide(mLogFragment);
+                if (mDashboardFragment.isAdded()) {
+                    fragmentTransaction.show(mDashboardFragment);
+                } else {
+                    fragmentTransaction.add(R.id.container_main, mDashboardFragment, DASHBOARD);
                 }
-                return false;
-            }
-        };
+                fragmentTransaction.commit();
 
-        dialog = new AlertDialog.Builder(mContext).create();
-        dialog.setOnKeyListener(keyListener);
-        dialog.show();
-        dialog.setContentView(layout);
+                return true;
+            case R.id.navigation_log:
+
+                if (mLogFragment == null) mLogFragment = new LogFragment();
+                if (mHomeFragment != null) fragmentTransaction.hide(mHomeFragment);
+                if (mDashboardFragment != null) fragmentTransaction.hide(mDashboardFragment);
+                if (mLogFragment.isAdded()) {
+                    fragmentTransaction.show(mLogFragment);
+                } else {
+                    fragmentTransaction.add(R.id.container_main, mLogFragment, LOG);
+                }
+                fragmentTransaction.commit();
+
+                return true;
+        }
+        return false;
     }
 
-    public void closeDialog() {
-        dialog.dismiss();
+    public void onOpenDetail(String message) {
+
+        FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
+
+        if (mHomeFragment != null && !mHomeFragment.isHidden()) {
+            fragmentTransaction.hide(mHomeFragment);
+            fragmentTransaction.addToBackStack(HOME);
+        }
+        if (mDashboardFragment != null && !mDashboardFragment.isHidden()) {
+            fragmentTransaction.hide(mDashboardFragment).addToBackStack(DASHBOARD);
+        }
+        if (mLogFragment != null && !mLogFragment.isHidden()) {
+            fragmentTransaction.hide(mLogFragment).addToBackStack(LOG);
+        }
+
+        DetailFragment fragment = new DetailFragment();
+        Bundle bundle = new Bundle();
+        bundle.putString(DETAIL_MESSAGE, message);
+        fragment.setArguments(bundle);
+        fragmentTransaction.add(R.id.container_main, fragment, DETAIL).commit();
     }
 
     public void registerPermissions() {
@@ -246,23 +259,5 @@ public class Main extends Activity {
             }
         }
         return true;
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_devices, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        int id = item.getItemId();
-
-        isBLEModule = (id==R.id.menu_ble_2_0?false:true);
-
-        initBluetoothAdapter();
-
-        return super.onOptionsItemSelected(item);
     }
 }

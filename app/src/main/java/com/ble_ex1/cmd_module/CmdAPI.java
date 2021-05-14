@@ -1,4 +1,6 @@
 package com.ble_ex1.cmd_module;
+import android.util.Log;
+
 import com.ble_ex1.Global;
 import com.ble_ex1.Tools;
 
@@ -7,9 +9,12 @@ import org.json.JSONObject;
 import java.util.Date;
 
 public class CmdAPI {
+
+    private final static String TAG = "CmdAPI";
     public static Command CreateCommand(String data) {
         Command command = null;
         try {
+            data = data.replaceAll("cmd_res", "cmd");
             JSONObject info  = new JSONObject(data);
             if(info!=null) {
                 switch (info.optString("cmd", "")) {
@@ -20,6 +25,8 @@ public class CmdAPI {
                         command = (Command) new BaseCommand(info);
                 }
             }
+
+            Log.d(TAG, "Rev: " + info.toString());
         } catch (Exception ex) { System.out.println(ex.toString()); }
         return command;
     }

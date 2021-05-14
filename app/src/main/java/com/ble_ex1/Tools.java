@@ -11,7 +11,7 @@ public class Tools {
 
     private final static String AESKey = "billion35753268";
 
-    public static String Encrypt(String src) throws Exception {
+    public static String Encrypt(String src) {
         try {
             byte[] temp = AESKey.getBytes("utf-8");
             byte[] raw = new byte[16];
@@ -22,7 +22,7 @@ public class Tools {
             cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
             String hexStr = byte2Hex(cipher.doFinal(string2Hex(src)));
 
-            return hexStr.substring(0, hexStr.length()/2);
+            return hexStr.substring(0, hexStr.length()/2).toLowerCase();
         } catch (Exception ex) { System.out.println(ex.toString()); }
         return null;
     }

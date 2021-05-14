@@ -23,7 +23,7 @@ public class CmdObserver implements Observer {
     }
 
     @Override
-    public void update(String status, Command cmd) {
-        if(listener!=null) listener.onData(status, cmd);
+    public void update(String status, Object obj) {
+        if(listener!=null) listener.onData(status, obj);
     }
 }
