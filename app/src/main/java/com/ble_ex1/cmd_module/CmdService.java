@@ -6,6 +6,7 @@ import com.ble_ex1.Global;
 import com.ble_ex1.ble_module.BleListener;
 import org.json.JSONObject;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class CmdService implements Observable {
 
@@ -13,6 +14,7 @@ public class CmdService implements Observable {
     private static final double CMD_RECEIVE_TIMEOUT = 1 * 1000;
     private ArrayList<Observer> observerList = new ArrayList<Observer>();
     private ArrayList<Command> cmdList = new ArrayList<Command>();
+    private HashMap<String, Command> cmdTypeList = new HashMap<String, Command>();
     private StringBuffer buffer = new StringBuffer();
     private Command lastCommand = null;
     private boolean bleConnectStatus = false;
@@ -78,6 +80,7 @@ public class CmdService implements Observable {
                 addCommandHistory(cmd);
                 lastCommand = cmd;
                 inform(Global.BLE_CHARACTERISTIC, cmd);
+                addCommandTypeList(cmd);
             }
         } catch (Exception ex) { System.out.println(ex.toString()); }
     }
@@ -106,6 +109,14 @@ public class CmdService implements Observable {
 
     public ArrayList<Command> getCommandHistory() {
         return cmdList;
+    }
+
+    public void addCommandTypeList(Command cmd) {
+        cmdTypeList.put(cmd.getCmd(), cmd);
+    }
+
+    public Command getCommandTypeList(String type) {
+        return cmdTypeList.get(type);
     }
 
     public void addCommandHistory(Command cmd) {

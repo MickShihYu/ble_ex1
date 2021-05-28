@@ -18,7 +18,7 @@ public class CmdSchedule {
     private Timer loginTimer = new Timer();
     public CmdSchedule() {
         loginTimer.schedule(new LogInTimer(), 1000, 5 * 1000);
-        loginTimer.schedule(new DeviceInfo(), 1000, 60 * 1000);
+        loginTimer.schedule(new DeviceInfo(), 1000, 10 * 1000);
     }
 }
 

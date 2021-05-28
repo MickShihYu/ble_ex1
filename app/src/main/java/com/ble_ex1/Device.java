@@ -30,27 +30,27 @@ public class Device extends Activity implements OnItemClickListener {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.device_list);
+//		setContentView(R.layout.device_list);
 
 		try {
 			setTitle("Device");
 
-			listView = (ListView) findViewById(R.id.listView);
-			devices = (ArrayList<BluetoothDevice>) Global.getBleDevice();
-
-			for (BluetoothDevice device : devices) {
-				map = new HashMap<String, String>();
-				map.put(DEVICE_NAME, device.getName());
-				map.put(DEVICE_ADDRESS, device.getAddress());
-				listItems.add(map);
-			}
-
-			adapter = new SimpleAdapter(getApplicationContext(), listItems,
-					R.layout.list_item, new String[] { "name", "address" },
-					new int[] { R.id.deviceName, R.id.deviceAddr });
-
-			listView.setAdapter(adapter);
-			listView.setOnItemClickListener(this);
+//			listView = (ListView) findViewById(R.id.listView);
+//			devices = (ArrayList<BluetoothDevice>) Global.getBleDevice();
+//
+//			for (BluetoothDevice device : devices) {
+//				map = new HashMap<String, String>();
+//				map.put(DEVICE_NAME, device.getName());
+//				map.put(DEVICE_ADDRESS, device.getAddress());
+//				listItems.add(map);
+//			}
+//
+//			adapter = new SimpleAdapter(getApplicationContext(), listItems,
+//					R.layout.list_item, new String[] { "name", "address" },
+//					new int[] { R.id.deviceName, R.id.deviceAddr });
+//
+//			listView.setAdapter(adapter);
+//			listView.setOnItemClickListener(this);
 
 		} catch (Exception ex) { System.out.println(ex.toString()); }
 	}
@@ -58,12 +58,7 @@ public class Device extends Activity implements OnItemClickListener {
 	@Override
 	public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
 		HashMap<String, String> hashMap = (HashMap<String, String>) listItems.get(position);
-		String addr = hashMap.get(DEVICE_ADDRESS);
-		String name = hashMap.get(DEVICE_NAME);
-		Intent intent = new Intent(Device.this, Main.class);
-		intent.putExtra(EXTRA_DEVICE_ADDRESS, addr);
-		intent.putExtra(EXTRA_DEVICE_NAME, name);
-		startActivity(intent);
+		Global.connectBluetooth(hashMap.get(DEVICE_ADDRESS));
 		finish();
 	}
 }

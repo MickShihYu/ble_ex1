@@ -27,13 +27,11 @@ public class LogFragment extends Fragment {
     private static final String TAG = Main.class.getSimpleName();
     private Activity activity = null;
     private ListView lv_log = null;
-    private LogAdapter mAdapter = null;
+    private LogAdapter adapter = null;
     private CmdObserver cmdObserver = null;
     private Button btn_clear = null;
 
-    public LogFragment() {
-        //initCmdService();
-    }
+    public LogFragment() {}
 
     public void initCmdService() {
         if(cmdObserver == null) {
@@ -79,8 +77,8 @@ public class LogFragment extends Fragment {
             List<Command> cmdList = Global.getCommandHistory();
             List<Command> list = new ArrayList<>();
             list.addAll(cmdList);
-            mAdapter = new LogAdapter(activity, list);
-            lv_log.setAdapter(mAdapter);
+            adapter = new LogAdapter(activity, list);
+            lv_log.setAdapter(adapter);
         } catch (Exception ex) { Log.e(TAG, ex.toString()); }
     }
 
@@ -89,9 +87,9 @@ public class LogFragment extends Fragment {
             public void run() {
                 try {
                     List<Command> cmdList = Global.getCommandHistory();
-                    mAdapter.getData().clear();
-                    mAdapter.getData().addAll(cmdList);
-                    mAdapter.notifyDataSetChanged();
+                    adapter.getData().clear();
+                    adapter.getData().addAll(cmdList);
+                    adapter.notifyDataSetChanged();
                 } catch (Exception ex) { Log.e(TAG, ex.toString()); }
             }
         });

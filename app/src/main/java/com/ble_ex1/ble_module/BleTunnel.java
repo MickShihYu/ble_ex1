@@ -1,70 +1,67 @@
 package com.ble_ex1.ble_module;
-
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
-import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
-import android.content.Intent;
 import android.util.Log;
-
-import com.ble_ex1.ble_module.BleListener;
 import com.ble_ex1.Global;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
 
-public class BleTunnel implements BleInterface {
+public class BleTunnel {
 
     private final static String TAG = "BleTunnel";
+
     private BluetoothAdapter bluetoothAdapter = null;
     private BluetoothGatt bluetoothGatt = null;
+    private BluetoothDevice device = null;
     private BleListener readListener = null;
     private BluetoothGattCharacteristic characteristicTx = null,  characteristicRx = null;
-    private List<BluetoothDevice> devices = new ArrayList<BluetoothDevice>();
+
     private Activity activity = null;
+
     private boolean connectStatus = false;
+    private boolean autoConnect = false;
+
 
     private BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
 
-            Log.d(TAG, "Connect status: " + status);
+            Log.d(TAG, "Connect status: " + status + " new status: " + newState);
             if(readListener!=null) readListener.onData(Global.BLE_STATUS, newState, null);
 
             switch (newState) {
                 case BluetoothProfile.STATE_CONNECTED:
                     bluetoothGatt.discoverServices();
                     connectStatus = true;
-                    //writeEnd();
                     break;
                 case BluetoothProfile.STATE_DISCONNECTED:
-                    connectStatus = false;
-                    break;
                 default:
-//                    if ((status == 8 && newState == 0) || (status == 133 && newState == 0)) {
-//                        gatt.disconnect();
-//                        gatt.close();
-//                        gatt.getDevice().connectGatt(activity.getApplicationContext(), false, gattCallback);
-//                    }
-
+                    connectStatus = false;
+                    bluetoothGatt.close();
             }
         }
 
         public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
-            Log.d(TAG, "rssi status: " + status);
+            Log.d(TAG, "rssi status: " + status + " value: " + rssi);
         };
 
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             Log.d(TAG, "discovered status: " + status);
-            if (status == BluetoothGatt.GATT_SUCCESS)
-            {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
                 getGattService();
+
+//                TimerTask task = new TimerTask()
+//                {
+//                    public void run()
+//                    {
+//                        bluetoothGatt.readRemoteRssi();
+//                    }
+//                };
+//                Timer rssiTimer = new Timer();
+//                rssiTimer.schedule(task, 1000, 1000);
             }
         }
 
@@ -80,13 +77,11 @@ public class BleTunnel implements BleInterface {
 
     private void characteristicRead(BluetoothGattCharacteristic characteristic, int status) {
         try {
-
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (readListener != null) {
                     readListener.onData(Global.BLE_CHARACTERISTIC, status, characteristic.getValue());
-
-                    String str = new String(characteristic.getValue());
-                    Log.d(TAG, "rev: " + str);
+                    //String str = new String(characteristic.getValue());
+                    //Log.d(TAG, "rev: " + str);
                 }
             }
         } catch (Exception ex) { System.out.println(ex.toString()); }
@@ -120,31 +115,23 @@ public class BleTunnel implements BleInterface {
             if (bluetoothAdapter == null || address == null) return false;
             else close();
 
-            if (bluetoothGatt != null) {
-                if (bluetoothGatt.connect()) return true;
-                else return false;
-            }
-
-            final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
+            device = bluetoothAdapter.getRemoteDevice(address);
             if (device == null) return false;
 
-            bluetoothGatt = device.connectGatt(activity, false, gattCallback);
+            bluetoothGatt = device.connectGatt(activity, autoConnect, gattCallback);
             return true;
 
         } catch (Exception ex) { System.out.println(ex.toString()); }
         return false;
     }
 
-    public void disconnect() {
-        if (bluetoothAdapter == null || bluetoothGatt == null) return;
-        bluetoothGatt.disconnect();
-    }
-
     public void close() {
         if (bluetoothGatt == null) return;
+
         bluetoothGatt.disconnect();
         bluetoothGatt.close();
         bluetoothGatt = null;
+        connectStatus = false;
     }
 
     public void readCharacteristic(BluetoothGattCharacteristic characteristic) {
@@ -197,32 +184,19 @@ public class BleTunnel implements BleInterface {
         //bluetoothGatt.writeDescriptor(descriptor);
     }
 
-    public List<BluetoothDevice> getBleDevice() {
-        return devices;
+    public BluetoothDevice getConnectDevice() {
+        return device;
     }
 
-    public void scanLeDevice() {
-        new Thread() {
-            public void run() {
-                try {
-                    bluetoothAdapter.startLeScan(bleScanCallback);
-                    Thread.sleep(2000);
-                    bluetoothAdapter.stopLeScan(bleScanCallback);
-                } catch (Exception ex) {}
-            }
-        }.start();
+    public void scanLeDevice(BluetoothAdapter.LeScanCallback bleScanCallback) {
+        try {
+            bluetoothAdapter.startLeScan(bleScanCallback);
+        } catch (Exception ex) {}
     }
 
-    private BluetoothAdapter.LeScanCallback bleScanCallback = new BluetoothAdapter.LeScanCallback() {
-        public void onLeScan(final BluetoothDevice device, final int rssi, byte[] scanRecord) {
-            //if (device != null) {
-            if (device != null && device.getName()!=null && device.getName().length()>0) {
-                if (devices.indexOf(device) == -1) {
-                    devices.add(device);
-                    //Log.d(TAG, "" + device.getAddress() + " , " + device.getName());
-                }
-            }
-        }
-    };
-
+    public void stopLeDevice(BluetoothAdapter.LeScanCallback bleScanCallback) {
+        try {
+            bluetoothAdapter.stopLeScan(bleScanCallback);
+        } catch (Exception ex) {}
+    }
 }

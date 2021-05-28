@@ -49,7 +49,7 @@ public class Tools {
 
     public static String getDate(long timeStamp) {
         //DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        DateFormat dateFormat = new SimpleDateFormat(" HH:mm:ss");
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
         return dateFormat.format(new Date(timeStamp));
     }
 }

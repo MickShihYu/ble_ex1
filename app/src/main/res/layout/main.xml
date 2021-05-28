@@ -22,12 +22,12 @@
             android:background="?android:attr/windowBackground"
             android:elevation="4dp">
 
-            <Button
-                android:id="@+id/btn_ble_connect"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Connect"
-                android:layout_gravity="right"/>
+<!--            <Button-->
+<!--                android:id="@+id/btn_ble_connect"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="Connect"-->
+<!--                android:layout_gravity="right"/>-->
         </android.support.v7.widget.Toolbar>
 
 
